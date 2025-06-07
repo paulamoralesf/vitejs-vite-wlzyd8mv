@@ -385,7 +385,7 @@
           <div class="progress-fill" style="width: 6%"></div>
         </div>
         <div class="story-content">
-          <div class="story-title">🎵 Bienvenido</div>
+          <div class="story-title">🎵 Hola mi bebito fiu fiu</div>
           <div class="story-subtitle">
             Prepárate para un viaje musical a través de nuestra historia de amor
           </div>
@@ -558,7 +558,7 @@
           <div class="music-player">
             <div class="song-info">
               <div class="song-title">Nada y Nadie</div>
-              <div class="song-artist">Banda MS</div>
+              <div class="song-artist">Sen Senra</div>
             </div>
             <div class="player-controls">
               <button class="play-button" onclick="toggleMusic('nada-y-nadie')">
@@ -603,7 +603,7 @@
           <div class="music-player">
             <div class="song-info">
               <div class="song-title">Neo Surf</div>
-              <div class="song-artist">Bad Bunny</div>
+              <div class="song-artist">070 Shake</div>
             </div>
             <div class="player-controls">
               <button class="play-button" onclick="toggleMusic('neo-surf')">
@@ -969,7 +969,7 @@
           <div class="music-player">
             <div class="song-info">
               <div class="song-title">Baile Inolvidable</div>
-              <div class="song-artist">Feid, Karol G</div>
+              <div class="song-artist">Bad Bunny</div>
             </div>
             <div class="player-controls">
               <button
@@ -1110,10 +1110,10 @@
           <div class="progress-fill" style="width: 100%"></div>
         </div>
         <div class="story-content">
-          <div class="story-title">🎁 Final</div>
-          <div class="story-subtitle">15 canciones que nos mueven (al menos a mí) y quiero que te muevan a ti también</div>
+          <div class="story-title">🎁 Felices 4 años !</div>
+          <div class="story-subtitle">Estas son 15 canciones que suenan en mi soundtrack de nuestra vida juntos y las tuyas?</div>
           <div class="story-subtitle">
-            TE AMO MAXIME
+            TE AMO MAXIME 💝
           </div>
           <div class="stats">
             <div class="stat-item">
@@ -1230,8 +1230,96 @@
   },
 };
 
+      // Función para detener la música completamente
+      function stopMusic() {
+        if (isPlaying) {
+          audioPlayer.pause();
+          audioPlayer.currentTime = 0; // Reinicia la canción al principio
+          isPlaying = false;
+          
+          // Resetear el botón que está reproduciendo
+          const playingButton = document.querySelector('.play-button.playing');
+          if (playingButton) {
+            playingButton.textContent = '▶';
+            playingButton.classList.remove('playing');
+          }
+          
+          // Ocultar cualquier indicador de carga
+          const loadingIndicators = document.querySelectorAll('.loading-indicator.show');
+          loadingIndicators.forEach(indicator => {
+            indicator.classList.remove('show');
+          });
+          
+          // Resetear la barra de progreso si existe
+          if (currentSong) {
+            const progressFill = document.getElementById(`progress-${currentSong}`);
+            const currentTimeSpan = document.getElementById(`current-time-${currentSong}`);
+            
+            if (progressFill) progressFill.style.width = '0%';
+            if (currentTimeSpan) currentTimeSpan.textContent = '0:00';
+          }
+          
+          currentSong = null;
+        }
+      }
+
+      // Función para obtener el ID de la canción de la historia actual
+      function getCurrentStorySong() {
+        const activeStory = stories[currentStory];
+        if (activeStory) {
+          const playButton = activeStory.querySelector('.play-button');
+          if (playButton) {
+            // Extraer el songId del onclick attribute
+            const onclickAttr = playButton.getAttribute('onclick');
+            const match = onclickAttr.match(/toggleMusic\('([^']+)'\)/);
+            return match ? match[1] : null;
+          }
+        }
+        return null;
+      }
+
+      // Función para reproducir automáticamente la canción de la historia actual
+      function autoPlayCurrentSong() {
+        const songId = getCurrentStorySong();
+        if (songId && songDatabase[songId]) {
+          const playButton = stories[currentStory].querySelector('.play-button');
+          const loadingIndicator = document.getElementById(`loading-${songId}`);
+          
+          if (playButton && loadingIndicator) {
+            // Mostrar indicador de carga
+            loadingIndicator.classList.add('show');
+            
+            // Configurar nueva canción
+            currentSong = songId;
+            audioPlayer.src = songDatabase[songId].url;
+            audioPlayer.load();
+
+            const playPromise = audioPlayer.play();
+
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  isPlaying = true;
+                  playButton.textContent = '⏸';
+                  playButton.classList.add('playing');
+                  loadingIndicator.classList.remove('show');
+                })
+                .catch((error) => {
+                  console.log('Error al reproducir automáticamente:', error);
+                  loadingIndicator.classList.remove('show');
+                  // En caso de error, mantener el botón en estado de play
+                  playButton.textContent = '▶';
+                  playButton.classList.remove('playing');
+                });
+            }
+          }
+        }
+      }
 
       function updateStory() {
+        // Detener música antes de cambiar de historia
+        stopMusic();
+        
         stories.forEach((story, index) => {
           story.classList.remove('active', 'prev');
           if (index === currentStory) {
@@ -1248,6 +1336,12 @@
         if (currentStory > 0) {
           createFloatingHearts();
         }
+
+        // Reproducir automáticamente la canción de la historia actual
+        // Pequeño delay para asegurar que la UI se actualice primero
+        setTimeout(() => {
+          autoPlayCurrentSong();
+        }, 100);
       }
 
       function toggleMusic(songId) {
@@ -1466,6 +1560,13 @@
 
       // Inicializar
       updateStory();
+
+      // Auto-reproducir la primera canción al cargar la página
+      setTimeout(() => {
+        if (currentStory === 0) {
+          autoPlayCurrentSong();
+        }
+      }, 500);
     </script>
   </body>
 </html>
